@@ -1,8 +1,9 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"html/template"
-	"log"
 	"net/http"
 )
 
@@ -17,27 +18,47 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Example: Show a form to create a new plan/doodle
 func CreatePlanHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		// Show the form
 		err := tmpl.ExecuteTemplate(w, "create.html", nil)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	case "POST":
-		// Process submitted form data
 		err := r.ParseForm()
 		if err != nil {
 			http.Error(w, "Failed to parse form", http.StatusBadRequest)
 			return
 		}
 		planName := r.FormValue("planName")
-		// For now, just log it and redirect
-		log.Println("New plan created:", planName)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		options := r.Form["options"] // multiple inputs named "options"
+
+		if planName == "" || len(options) == 0 {
+			http.Error(w, "Plan name and at least one option are required", http.StatusBadRequest)
+			return
+		}
+
+		newPlan := &Plan{
+			ID:      generateID(), // write a helper to create unique IDs
+			Name:    planName,
+			Options: options,
+		}
+
+		SavePlan(newPlan)
+
+		// Redirect to view plan page
+		http.Redirect(w, r, "/plan?id="+newPlan.ID, http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func generateID() string {
+	b := make([]byte, 8)
+	_, err := rand.Read(b)
+	if err != nil {
+		panic(err) // in real app handle better
+	}
+	return hex.EncodeToString(b)
 }
