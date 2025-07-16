@@ -1,14 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/hex"
-	"html/template"
+	"log"
 	"net/http"
-)
+	"time"
 
-// We parse templates once here, so all handlers can use it.
-var tmpl = template.Must(template.ParseGlob("templates/*.html"))
+	"github.com/google/uuid"
+)
 
 // Home page handler — shows welcome page
 func HomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -20,38 +21,123 @@ func HomeHandler(w http.ResponseWriter, r *http.Request) {
 
 func CreatePlanHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
-	case "GET":
+	case http.MethodGet:
+		// Render the creation form
 		err := tmpl.ExecuteTemplate(w, "create.html", nil)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
 		}
-	case "POST":
-		err := r.ParseForm()
-		if err != nil {
-			http.Error(w, "Failed to parse form", http.StatusBadRequest)
+
+	case http.MethodPost:
+		// Handle form submission
+		name := r.FormValue("name")
+		optionStrings := r.Form["options"] // multiple "options" inputs
+
+		layout := "2006-01-02T15:04" // datetime-local format
+		var parsedOptions []time.Time
+
+		for _, optStr := range optionStrings {
+			if t, err := time.Parse(layout, optStr); err == nil {
+				parsedOptions = append(parsedOptions, t)
+			} else {
+				http.Error(w, "Invalid date/time format: "+optStr, http.StatusBadRequest)
+				return
+			}
+		}
+
+		if name == "" || len(parsedOptions) == 0 {
+			http.Error(w, "Name and at least one date/time option are required", http.StatusBadRequest)
 			return
 		}
-		planName := r.FormValue("planName")
-		options := r.Form["options"] // multiple inputs named "options"
 
-		if planName == "" || len(options) == 0 {
-			http.Error(w, "Plan name and at least one option are required", http.StatusBadRequest)
-			return
+		id := uuid.New().String()
+
+		plan := &Plan{
+			ID:        id,
+			Name:      name,
+			Options:   parsedOptions,
+			Responses: []ParticipantResponse{},
 		}
 
-		newPlan := &Plan{
-			ID:      generateID(), // write a helper to create unique IDs
-			Name:    planName,
-			Options: options,
-		}
+		plans[id] = plan
 
-		SavePlan(newPlan)
+		// Redirect to view the created plan
+		http.Redirect(w, r, "/plan?id="+id, http.StatusSeeOther)
 
-		// Redirect to view plan page
-		http.Redirect(w, r, "/plan?id="+newPlan.ID, http.StatusSeeOther)
 	default:
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 	}
+}
+
+func ViewPlanHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		http.Error(w, "Missing plan ID", http.StatusBadRequest)
+		return
+	}
+
+	plan, ok := GetPlan(id)
+	if !ok {
+		http.Error(w, "Plan not found", http.StatusNotFound)
+		return
+	}
+
+	// Use a buffer to catch template errors before writing anything to the client
+	var buf bytes.Buffer
+	err := tmpl.ExecuteTemplate(&buf, "plan.html", plan)
+	if err != nil {
+		log.Println("Template error:", err)
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// Only write if everything succeeded
+	buf.WriteTo(w)
+}
+
+func RespondHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	planID := r.FormValue("plan_id")
+	name := r.FormValue("name")
+
+	if planID == "" || name == "" {
+		http.Error(w, "Missing plan ID or participant name", http.StatusBadRequest)
+		return
+	}
+
+	plan, ok := plans[planID]
+	if !ok {
+		http.Error(w, "Plan not found", http.StatusNotFound)
+		return
+	}
+
+	response := ParticipantResponse{
+		Name:      name,
+		Available: make(map[string]string),
+	}
+
+	layout := "2006-01-02T15:04" // must match input names in your form
+
+	for _, option := range plan.Options {
+		optionStr := option.Format(layout)
+		choice := r.FormValue(optionStr)
+		// Accept only expected choices, ignore missing or invalid
+		if choice == "yes" || choice == "maybe" || choice == "no" {
+			response.Available[optionStr] = choice
+		}
+	}
+
+	// Protect concurrent access if you have goroutines
+	plan.Mutex.Lock()
+	plan.Responses = append(plan.Responses, response)
+	plan.Mutex.Unlock()
+
+	// Redirect back to the plan page to see updated results
+	http.Redirect(w, r, "/plan?id="+planID, http.StatusSeeOther)
 }
 
 func generateID() string {
