@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <title>Create a Plan | Planish</title>
-    <link rel="stylesheet" href="/static/style.css" />
+	<meta charset="UTF-8" />
+	<title>Create a Plan</title>
 </head>
 <body>
-    <h1>Create a New Plan</h1>
-    <form action="/create" method="post">
-        <label for="planName">Plan Name:</label>
-        <input type="text" id="planName" name="planName" required /><br/>
+	<h1>Create a New Plan</h1>
+	<form action="/create" method="POST">
+		<label for="name">Plan Name:</label><br />
+		<input type="text" id="name" name="name" required /><br /><br />
 
-        <label>Options (dates/times):</label><br/>
-        <input type="text" name="options" required /><br/>
-        <input type="text" name="options" /><br/>
-        <input type="text" name="options" /><br/>
+		<label>Choose your date/time options:</label><br />
 
-        <button type="submit">Create Plan</button>
-    </form>
-    <p><a href="/">Back to Home</a></p>
+		<!-- You can add more input fields or use JS to add dynamically -->
+		<input type="datetime-local" name="options" required /><br />
+		<input type="datetime-local" name="options" /><br />
+		<input type="datetime-local" name="options" /><br /><br />
+
+		<button type="submit">Create Plan</button>
+	</form>
 </body>
 </html>

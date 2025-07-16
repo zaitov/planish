@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{.Name}} – Planish</title>
+  <style>
+    table { border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+    .yes { background-color: lightgreen; }
+    .maybe { background-color: khaki; }
+    .no { background-color: lightcoral; }
+  </style>
+</head>
+<body>
+  <h1>{{.Name}}</h1>
+
+  <h2>Submit your availability</h2>
+  <form action="/respond" method="POST">
+    <input type="hidden" name="plan_id" value="{{.ID}}">
+
+    <label for="name">Your name:</label>
+    <input type="text" name="name" id="name" required><br><br>
+
+    {{range .Options}}
+      <fieldset>
+        <legend>{{displayTime .}}</legend>
+        <label><input type="radio" name="{{formatTime .}}" value="yes" required> Yes</label>
+        <label><input type="radio" name="{{formatTime .}}" value="maybe"> Maybe</label>
+        <label><input type="radio" name="{{formatTime .}}" value="no"> No</label>
+      </fieldset>
+    {{end}}
+
+    <br>
+    <button type="submit">Submit</button>
+  </form>
+
+  {{if .Responses}}
+    <h2>Response Matrix</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Option</th>
+          <th>Yes Count</th>
+          {{range .Responses}}
+            <th>{{.Name}}</th>
+          {{end}}
+        </tr>
+      </thead>
+      <tbody>
+        {{range .Options}}
+          {{ $opt := . }}
+          {{ $optStr := formatTime $opt }}
+          <tr>
+            <td>{{displayTime $opt}}</td>
+            <td>{{ yesCount $.Responses $optStr }}</td>
+            {{range $.Responses}}
+              {{ $resp := index .Available $optStr }}
+              <td class="{{ $resp }}">{{ responseEmoji $resp }}</td>
+            {{end}}
+          </tr>
+        {{end}}
+      </tbody>
+    </table>
+  {{end}}
+
+</body>
+</html>

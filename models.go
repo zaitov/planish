@@ -1,18 +1,21 @@
 package main
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 // ParticipantResponse stores what options a user is available for
 type ParticipantResponse struct {
 	Name      string
-	Available map[string]bool // option string -> available or not
+	Available map[string]string // option -> "yes" | "maybe" | "no"
 }
 
 // Plan represents a scheduling plan with options and participants
 type Plan struct {
 	ID        string
 	Name      string
-	Options   []string // date/time options
+	Options   []time.Time // change from []string to []time.Time
 	Responses []ParticipantResponse
-	Mutex     sync.Mutex // to protect concurrent access
+	Mutex     sync.Mutex
 }
