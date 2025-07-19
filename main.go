@@ -62,6 +62,7 @@ func main() {
 	http.HandleFunc("/create", CreatePlanHandler)
 	http.HandleFunc("/plan", ViewPlanHandler)
 	http.HandleFunc("/respond", RespondHandler)
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
 	log.Println("Listening on :8080...")
 	err := http.ListenAndServe(":8080", nil)

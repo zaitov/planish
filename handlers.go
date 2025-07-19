@@ -69,6 +69,11 @@ func CreatePlanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type PlanWithLink struct {
+	*Plan
+	ShareLink string
+}
+
 func ViewPlanHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
@@ -82,16 +87,20 @@ func ViewPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Use a buffer to catch template errors before writing anything to the client
+	fullURL := "http://" + r.Host + "/plan?id=" + id
+	data := PlanWithLink{
+		Plan:      plan,
+		ShareLink: fullURL,
+	}
+
 	var buf bytes.Buffer
-	err := tmpl.ExecuteTemplate(&buf, "plan.html", plan)
+	err := tmpl.ExecuteTemplate(&buf, "plan.html", data)
 	if err != nil {
 		log.Println("Template error:", err)
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Only write if everything succeeded
 	buf.WriteTo(w)
 }
 

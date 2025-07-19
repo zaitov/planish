@@ -3,13 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <title>{{.Name}} – Planish</title>
-  <style>
-    table { border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
-    .yes { background-color: lightgreen; }
-    .maybe { background-color: khaki; }
-    .no { background-color: lightcoral; }
-  </style>
+<head>
+  <meta charset="UTF-8">
+  <title>{{.Name}} – Planish</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
 </head>
 <body>
   <h1>{{.Name}}</h1>
@@ -33,6 +31,9 @@
     <br>
     <button type="submit">Submit</button>
   </form>
+  <button onclick="copyShareLink()">📋 Share Plan</button>
+  <input type="text" id="shareLink" value="{{.ShareLink}}" readonly style="width: 60%; display:none;">
+  <span id="copyMsg" style="color: green; display:none;">Link copied!</span>
 
   {{if .Responses}}
     <h2>Response Matrix</h2>
@@ -40,7 +41,7 @@
       <thead>
         <tr>
           <th>Option</th>
-          <th>Yes Count</th>
+          <th>Available</th>
           {{range .Responses}}
             <th>{{.Name}}</th>
           {{end}}
@@ -62,6 +63,18 @@
       </tbody>
     </table>
   {{end}}
+  <script>
+    function copyShareLink() {
+      const input = document.getElementById("shareLink");
+      navigator.clipboard.writeText(input.value).then(() => {
+        const msg = document.getElementById("copyMsg");
+        msg.style.display = "inline";
+        setTimeout(() => {
+          msg.style.display = "none";
+        }, 2000);
+      });
+  }
+  </script>
 
 </body>
 </html>
