@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // Home page handler — shows welcome page
@@ -50,7 +48,7 @@ func CreatePlanHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		id := uuid.New().String()
+		id := generateID() // Or uuid.New().String() if you prefer
 
 		plan := &Plan{
 			ID:        id,
@@ -59,7 +57,11 @@ func CreatePlanHandler(w http.ResponseWriter, r *http.Request) {
 			Responses: []ParticipantResponse{},
 		}
 
-		plans[id] = plan
+		err := InsertPlan(plan)
+		if err != nil {
+			http.Error(w, "Failed to save plan: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		// Redirect to view the created plan
 		http.Redirect(w, r, "/plan?id="+id, http.StatusSeeOther)
@@ -118,9 +120,10 @@ func RespondHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	plan, ok := plans[planID]
-	if !ok {
-		http.Error(w, "Plan not found", http.StatusNotFound)
+	// Fetch plan options from DB to know valid options
+	options := GetPlanOptions(planID)
+	if len(options) == 0 {
+		http.Error(w, "Plan not found or no options", http.StatusNotFound)
 		return
 	}
 
@@ -131,7 +134,7 @@ func RespondHandler(w http.ResponseWriter, r *http.Request) {
 
 	layout := "2006-01-02T15:04" // must match input names in your form
 
-	for _, option := range plan.Options {
+	for _, option := range options {
 		optionStr := option.Format(layout)
 		choice := r.FormValue(optionStr)
 		// Accept only expected choices, ignore missing or invalid
@@ -140,10 +143,11 @@ func RespondHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Protect concurrent access if you have goroutines
-	plan.Mutex.Lock()
-	plan.Responses = append(plan.Responses, response)
-	plan.Mutex.Unlock()
+	err := AddResponse(planID, response)
+	if err != nil {
+		http.Error(w, "Failed to save response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	// Redirect back to the plan page to see updated results
 	http.Redirect(w, r, "/plan?id="+planID, http.StatusSeeOther)

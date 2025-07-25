@@ -58,6 +58,7 @@ func init() {
 }
 
 func main() {
+	InitDB("/app/data/plans.db")
 	http.HandleFunc("/", HomeHandler)
 	http.HandleFunc("/create", CreatePlanHandler)
 	http.HandleFunc("/plan", ViewPlanHandler)
