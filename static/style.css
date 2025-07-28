@@ -1,6 +1,122 @@
 body {
-    font-family: Arial, sans-serif;
-    margin: 2rem;
-    background: #f0f8ff;
-    color: #333;
+  font-family: system-ui, sans-serif;
+  margin: 40px auto;
+  max-width: 800px;
+  line-height: 1.6;
+  padding: 0 20px;
+  background: #fdfdfd;
+  color: #333;
+}
+
+h1, h2 {
+  color: #2c3e50;
+}
+
+form {
+  background: #ffffff;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  margin-bottom: 30px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+fieldset {
+  border: none;
+  margin-bottom: 20px;
+}
+
+legend {
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #34495e;
+}
+
+label {
+  margin-right: 15px;
+  font-weight: normal;
+  cursor: pointer;
+}
+
+input[type="text"] {
+  padding: 6px 10px;
+  font-size: 16px;
+  margin-top: 5px;
+  margin-bottom: 15px;
+  width: 100%;
+  max-width: 300px;
+  box-sizing: border-box;
+}
+
+button {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+button:hover {
+  background-color: #27ae60;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  font-size: 15px;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+th {
+  background-color: #ecf0f1;
+  font-weight: bold;
+}
+
+.yes {
+  background-color: #b2f2bb;
+}
+
+.maybe {
+  background-color: #ffe58a;
+}
+
+.no {
+  background-color: #ffb3b3;
+}
+
+@media (max-width: 600px) {
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tr {
+    margin-bottom: 15px;
+  }
+
+  td {
+    padding: 10px;
+    border: none;
+    position: relative;
+    text-align: left;
+  }
+
+  td:before {
+    content: attr(data-label);
+    font-weight: bold;
+    display: inline-block;
+    width: 120px;
+  }
 }

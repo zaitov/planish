@@ -1,12 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Planish - Schedule Your Fun</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <meta charset="UTF-8">
+  <title>Welcome to Planish</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+
+    a.button, button {
+      display: inline-block;
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      border: none;
+      background-color: #4CAF50;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      font-size: 16px;
+      width: 300px;
+      margin-top: 10px;
+    }
+
+    form {
+      margin-top: 30px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to Planish!</h1>
-  <p>Plan your events, weekends, afterworks, and more.</p>
+
+  <h1>Welcome to Planish 🎯</h1>
+  <p>Plan events, vote on options, and find the perfect time together.</p>
+
+  <a href="/create" class="button">➕ Create a New Plan</a>
+
+  <form action="/plan" method="GET">
+    <h2>🔑 Join an Existing Plan</h2>
+    <label for="plan-id">Enter Plan ID:</label><br>
+    <input type="text" id="plan-id" name="id" placeholder="e.g. 123e4567-e89b-12d3-a456..." required>
+    <br><br>
+    <button type="submit">🔍 View Plan</button>
+  </form>
+
 </body>
 </html>

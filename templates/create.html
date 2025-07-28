@@ -1,23 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-	<meta charset="UTF-8" />
-	<title>Create a Plan</title>
+  <meta charset="UTF-8">
+  <title>Create a New Plan – Planish</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    form {
+      margin-top: 30px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input[type="text"], input[type="datetime-local"] {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+
+    .option-group {
+      margin-top: 10px;
+    }
+
+    .option-group input {
+      width: calc(100% - 40px);
+      display: inline-block;
+    }
+
+    .remove-btn {
+      margin-left: 5px;
+      background-color: #e74c3c;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button[type="submit"], .add-option-btn {
+      display: inline-block;
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .add-option-btn {
+      background-color: #3498db;
+      margin-left: 10px;
+    }
+  </style>
 </head>
 <body>
-	<h1>Create a New Plan</h1>
-	<form action="/create" method="POST">
-		<label for="name">Plan Name:</label><br />
-		<input type="text" id="name" name="name" required /><br /><br />
+  <h1>Create a New Plan</h1>
+  <form action="/create" method="POST">
+    <label for="name">Plan Name:</label>
+    <input type="text" id="name" name="name" required>
 
-		<label>Choose your date/time options:</label><br />
+    <label>Date/Time Options:</label>
+    <div id="options">
+      <div class="option-group">
+        <input type="datetime-local" name="options" required>
+      </div>
+    </div>
+    <button type="button" class="add-option-btn" onclick="addOption()">➕ Add Option</button>
 
-		<!-- You can add more input fields or use JS to add dynamically -->
-		<input type="datetime-local" name="options" required /><br />
-		<input type="datetime-local" name="options" /><br />
-		<input type="datetime-local" name="options" /><br /><br />
+    <br><br>
+    <button type="submit">Create Plan</button>
+  </form>
 
-		<button type="submit">Create Plan</button>
-	</form>
+  <script>
+    function addOption() {
+      const container = document.getElementById('options');
+      const group = document.createElement('div');
+      group.className = 'option-group';
+
+      const input = document.createElement('input');
+      input.type = 'datetime-local';
+      input.name = 'options';
+      input.required = true;
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'remove-btn';
+      removeBtn.textContent = '✖';
+      removeBtn.onclick = () => group.remove();
+
+      group.appendChild(input);
+      group.appendChild(removeBtn);
+      container.appendChild(group);
+    }
+  </script>
 </body>
 </html>
