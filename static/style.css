@@ -17,8 +17,8 @@
 * { box-sizing: border-box; }
 body { margin: 0; min-height: 100vh; background: var(--paper); color: var(--ink); font-family: "DM Sans", "Segoe UI", sans-serif; line-height: 1.5; }
 a { color: inherit; }
-.topbar { height: 72px; padding: 0 max(24px, calc((100% - 1080px) / 2)); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .72); }
-.wordmark { font-size: 22px; font-weight: 800; text-decoration: none; }
+.topbar { position: relative; height: 72px; padding: 0 max(24px, calc((100% - 1080px) / 2)); display: flex; align-items: center; justify-content: flex-end; border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .72); }
+.wordmark { position: absolute; left: 50%; transform: translateX(-50%); font-size: 22px; font-weight: 800; text-decoration: none; }
 .wordmark span { color: var(--coral); }
 .text-link { color: var(--green); font-size: 14px; font-weight: 700; text-underline-offset: 3px; }
 .page-shell { width: min(100% - 40px, 1000px); margin: 54px auto 80px; }
@@ -49,6 +49,20 @@ input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid 
 .date-list { display: grid; gap: 10px; margin-bottom: 14px; }
 .date-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .icon-button { min-height: 42px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 3px; background: #fff; color: var(--muted); font: inherit; cursor: pointer; }
+.calendar-picker { padding: 16px; border: 1px solid var(--line); border-radius: 4px; background: #f8faf7; }
+.picker-heading { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; margin-bottom: 12px; }
+.picker-heading h2 { text-align: center; font-family: "Fraunces", Georgia, serif; font-size: 22px; }
+.picker-nav { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: var(--surface); color: var(--ink); font-size: 24px; line-height: 1; cursor: pointer; }
+.picker-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.picker-weekdays { margin-bottom: 6px; color: var(--muted); font-size: 12px; font-weight: 700; text-align: center; }
+.picker-day { width: 100%; aspect-ratio: 1; min-height: 40px; padding: 0; border: 1px solid transparent; border-radius: 50%; background: transparent; color: var(--ink); font: inherit; cursor: pointer; }
+.picker-day:hover { border-color: var(--green); background: #e8f1e9; }
+.picker-day.is-selected { border-color: var(--green); background: var(--green); color: #fff; font-weight: 700; }
+.picker-blank { aspect-ratio: 1; }
+.selected-dates { display: flex; flex-wrap: wrap; gap: 8px; min-height: 38px; align-items: center; margin-top: 12px; }
+.selection-empty { color: var(--muted); font-size: 13px; }
+.selected-date { padding: 7px 10px; border: 1px solid #cbdccf; border-radius: 20px; background: #edf5ea; color: var(--ink); font: inherit; font-size: 12px; cursor: pointer; }
+.selected-date:hover { border-color: var(--coral); }
 .form-actions { display: flex; justify-content: flex-end; margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--line); }
 .plan-heading { padding: 4px 0 32px; border-bottom: 1px solid var(--line); }
 .plan-heading h1 { margin-bottom: 20px; font-size: 46px; }
@@ -93,13 +107,16 @@ td.no { background: var(--no); }
 .calendar-legend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 12px; }
 .calendar-legend i { display: inline-grid; width: 18px; height: 18px; place-items: center; border-radius: 50%; background: var(--surface); font-size: 12px; font-style: normal; font-weight: 800; }
 @media (max-width: 700px) {
-  .topbar { height: 62px; padding: 0 20px; }
+  .topbar { height: 62px; padding: 0 16px; }
   .page-shell { width: min(100% - 32px, 600px); margin-top: 34px; }
   .home-shell { min-height: auto; grid-template-columns: 1fr; gap: 30px; padding: 28px 0 50px; }
   .home-intro { padding: 12px 0 0; }
   h1 { font-size: 42px; }
   h2 { font-size: 27px; }
   .join-panel { padding: 22px; }
+  .calendar-picker { padding: 12px; }
+  .picker-grid { gap: 3px; }
+  .picker-day { min-height: 36px; }
   .date-options { grid-template-columns: 1fr; }
   .form-panel, .response-form { padding: 20px; }
   .plan-heading h1 { font-size: 38px; }

@@ -11,34 +11,131 @@
   <main class="page-shell narrow-shell">
     <p class="eyebrow">Make a plan</p>
     <h1>When works for everyone?</h1>
-    <p class="intro">Add the dates you want your group to choose from.</p>
     <form action="/create" method="POST" class="panel form-panel">
       <label for="name">Plan name</label>
       <input type="text" id="name" name="name" placeholder="Dinner, game night, ..." required>
-      <div class="field-heading"><span>Possible dates</span><span class="field-note">Date only, no times</span></div>
-      <div id="options" class="date-list"><div class="date-row"><input type="date" name="options" required aria-label="Possible date"></div></div>
-      <button type="button" class="button button-secondary" onclick="addOption()">+ Add another date</button>
+      <div class="field-heading"><span>Choose dates</span></div>
+      <section class="calendar-picker" aria-label="Choose possible dates">
+        <div class="picker-heading">
+          <button type="button" class="picker-nav" id="previousMonth" aria-label="Previous month">‹</button>
+          <h2 id="pickerMonth" aria-live="polite"></h2>
+          <button type="button" class="picker-nav" id="nextMonth" aria-label="Next month">›</button>
+        </div>
+        <div class="picker-grid picker-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+        <div class="picker-grid" id="pickerDays" tabindex="-1"></div>
+      </section>
+      <div class="selected-dates" id="selectedDates" aria-live="polite">
+        <span class="selection-empty">No dates selected</span>
+      </div>
+      <div id="options"></div>
       <div class="form-actions"><button type="submit" class="button">Create plan</button></div>
     </form>
   </main>
   <script>
-    function addOption() {
-      const group = document.createElement('div');
-      group.className = 'date-row';
-      const input = document.createElement('input');
-      input.type = 'date';
-      input.name = 'options';
-      input.required = true;
-      input.setAttribute('aria-label', 'Possible date');
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'icon-button';
-      removeButton.textContent = 'Remove';
-      removeButton.setAttribute('aria-label', 'Remove date');
-      removeButton.onclick = () => group.remove();
-      group.append(input, removeButton);
-      document.getElementById('options').appendChild(group);
+    const selectedDates = new Set();
+    const visibleMonth = new Date();
+    visibleMonth.setDate(1);
+
+    function dateKey(year, month, day) {
+      return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     }
+
+    function formatDate(value) {
+      return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, {
+        day: 'numeric', month: 'short', weekday: 'short'
+      });
+    }
+
+    function renderCalendar(focusDate = '') {
+      const year = visibleMonth.getFullYear();
+      const month = visibleMonth.getMonth();
+      document.getElementById('pickerMonth').textContent = visibleMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      const grid = document.getElementById('pickerDays');
+      grid.replaceChildren();
+
+      const offset = (new Date(year, month, 1).getDay() + 6) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let blank = 0; blank < offset; blank++) {
+        const spacer = document.createElement('span');
+        spacer.className = 'picker-blank';
+        spacer.setAttribute('aria-hidden', 'true');
+        grid.appendChild(spacer);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const value = dateKey(year, month, day);
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'picker-day';
+        button.textContent = day;
+        button.dataset.date = value;
+        button.setAttribute('aria-pressed', String(selectedDates.has(value)));
+        button.setAttribute('aria-label', formatDate(value));
+        if (selectedDates.has(value)) button.classList.add('is-selected');
+        button.addEventListener('click', () => {
+          if (selectedDates.has(value)) selectedDates.delete(value);
+          else selectedDates.add(value);
+          renderCalendar(value);
+          renderSelectedDates();
+        });
+        grid.appendChild(button);
+      }
+
+      if (focusDate) grid.querySelector(`[data-date="${focusDate}"]`)?.focus();
+    }
+
+    function renderSelectedDates() {
+      const selectedContainer = document.getElementById('selectedDates');
+      const optionsContainer = document.getElementById('options');
+      const orderedDates = [...selectedDates].sort();
+      selectedContainer.replaceChildren();
+      optionsContainer.replaceChildren();
+
+      if (orderedDates.length === 0) {
+        const emptyMessage = document.createElement('span');
+        emptyMessage.className = 'selection-empty';
+        emptyMessage.textContent = 'No dates selected';
+        selectedContainer.appendChild(emptyMessage);
+      }
+
+      for (const value of orderedDates) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'selected-date';
+        chip.textContent = `${formatDate(value)} ×`;
+        chip.setAttribute('aria-label', `Remove ${formatDate(value)}`);
+        chip.addEventListener('click', () => {
+          selectedDates.delete(value);
+          renderCalendar(value);
+          renderSelectedDates();
+        });
+        selectedContainer.appendChild(chip);
+
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'options';
+        input.value = value;
+        optionsContainer.appendChild(input);
+      }
+    }
+
+    document.getElementById('previousMonth').addEventListener('click', () => {
+      visibleMonth.setMonth(visibleMonth.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById('nextMonth').addEventListener('click', () => {
+      visibleMonth.setMonth(visibleMonth.getMonth() + 1);
+      renderCalendar();
+    });
+    document.querySelector('.form-panel').addEventListener('submit', event => {
+      if (selectedDates.size === 0) {
+        event.preventDefault();
+        document.getElementById('pickerDays').setAttribute('aria-invalid', 'true');
+        document.getElementById('pickerDays').focus();
+      }
+    });
+
+    renderCalendar();
   </script>
 </body>
 </html>
