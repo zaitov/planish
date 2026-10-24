@@ -1,31 +1,31 @@
 # flyctl launch added from .gitignore
 # Binaries
-**\*.exe
-**\*.exe~
-**\*.dll
-**\*.so
-**\*.dylib
+**/*.exe
+**/*.exe~
+**/*.dll
+**/*.so
+**/*.dylib
 
 # Build output
-**\bin
-**\build
-**\out
+**/bin
+**/build
+**/out
 
 # Go specific
-**\vendor
-**\*.test
-**\*.out
+**/vendor
+**/*.test
+**/*.out
 
 # IDE/editor configs
-**\.vscode
-**\.idea
-**\*.iml
+**/.vscode
+**/.idea
+**/*.iml
 
 # OS files
-**\.DS_Store
-**\Thumbs.db
+**/.DS_Store
+**/Thumbs.db
 
 # Logs and temporary files
-**\*.log
-**\tmp
+**/*.log
+**/tmp
 fly.toml
