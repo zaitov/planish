@@ -10,6 +10,9 @@ RUN go build -v -o /run-app .
 FROM debian:bookworm
 
 WORKDIR /app
+RUN mkdir -p /app/data
+ENV DB_PATH=/app/data/plans.db
+ENV PORT=8080
 
 COPY --from=builder /run-app /usr/local/bin/
 COPY --from=builder /usr/src/app/templates /app/templates

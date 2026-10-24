@@ -33,6 +33,7 @@ func InitDB(filepath string) {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			plan_id TEXT,
 			name TEXT,
+			edit_token TEXT,
 			FOREIGN KEY(plan_id) REFERENCES plans(id)
 		);`,
 		`CREATE TABLE IF NOT EXISTS response_choices (
@@ -48,6 +49,58 @@ func InitDB(filepath string) {
 		_, err := db.Exec(q)
 		if err != nil {
 			log.Fatal("DB init error:", err)
+		}
+	}
+
+	rows, err := db.Query("PRAGMA table_info(responses)")
+	if err != nil {
+		log.Fatal("DB migration error:", err)
+	}
+	hasEditToken := false
+	for rows.Next() {
+		var columnID, notNull, primaryKey int
+		var columnName, columnType string
+		var defaultValue sql.NullString
+		if err := rows.Scan(&columnID, &columnName, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
+			_ = rows.Close()
+			log.Fatal("DB migration error:", err)
+		}
+		if columnName == "edit_token" {
+			hasEditToken = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		log.Fatal("DB migration error:", err)
+	}
+	_ = rows.Close()
+	if !hasEditToken {
+		if _, err := db.Exec("ALTER TABLE responses ADD COLUMN edit_token TEXT"); err != nil {
+			log.Fatal("DB migration error:", err)
+		}
+	}
+
+	rows, err = db.Query("SELECT id FROM responses WHERE edit_token IS NULL OR edit_token = ''")
+	if err != nil {
+		log.Fatal("DB migration error:", err)
+	}
+	var responseIDs []int
+	for rows.Next() {
+		var responseID int
+		if err := rows.Scan(&responseID); err != nil {
+			_ = rows.Close()
+			log.Fatal("DB migration error:", err)
+		}
+		responseIDs = append(responseIDs, responseID)
+	}
+	if err := rows.Err(); err != nil {
+		_ = rows.Close()
+		log.Fatal("DB migration error:", err)
+	}
+	_ = rows.Close()
+	for _, responseID := range responseIDs {
+		if _, err := db.Exec("UPDATE responses SET edit_token = ? WHERE id = ?", generateEditToken(), responseID); err != nil {
+			log.Fatal("DB migration error:", err)
 		}
 	}
 }
@@ -66,7 +119,7 @@ func InsertPlan(plan *Plan) error {
 	}
 
 	for _, opt := range plan.Options {
-		_, err = tx.Exec("INSERT INTO options (plan_id, option_time) VALUES (?, ?)", plan.ID, opt.Format("2006-01-02T15:04"))
+		_, err = tx.Exec("INSERT INTO options (plan_id, option_time) VALUES (?, ?)", plan.ID, opt.Format("2006-01-02"))
 		if err != nil {
 			return err
 		}
@@ -94,29 +147,36 @@ func GetPlan(id string) (*Plan, bool) {
 	}
 	defer rows.Close()
 
-	layout := "2006-01-02T15:04"
+	seenOptions := make(map[string]bool)
 	for rows.Next() {
 		var optStr string
 		if err := rows.Scan(&optStr); err != nil {
 			return nil, false
 		}
-		t, err := time.Parse(layout, optStr)
+		t, err := parseOptionTime(optStr)
 		if err != nil {
 			continue
 		}
+		dateKey := t.Format("2006-01-02")
+		if seenOptions[dateKey] {
+			continue
+		}
+		seenOptions[dateKey] = true
 		plan.Options = append(plan.Options, t)
 	}
 
-	respRows, err := db.Query("SELECT id, name FROM responses WHERE plan_id = ?", id)
+	respRows, err := db.Query("SELECT id, name, edit_token FROM responses WHERE plan_id = ?", id)
 	if err == nil {
 		defer respRows.Close()
 		for respRows.Next() {
 			var respID int
-			var respName string
-			if err := respRows.Scan(&respID, &respName); err != nil {
+			var respName, editToken string
+			if err := respRows.Scan(&respID, &respName, &editToken); err != nil {
 				continue
 			}
 			response := ParticipantResponse{
+				ID:        respID,
+				EditToken: editToken,
 				Name:      respName,
 				Available: make(map[string]string),
 			}
@@ -130,7 +190,9 @@ func GetPlan(id string) (*Plan, bool) {
 			for optChoices.Next() {
 				var optStr, choice string
 				if err := optChoices.Scan(&optStr, &choice); err == nil {
-					response.Available[optStr] = choice
+					if optionTime, err := parseOptionTime(optStr); err == nil {
+						response.Available[optionTime.Format("2006-01-02")] = choice
+					}
 				}
 			}
 			optChoices.Close()
@@ -142,27 +204,48 @@ func GetPlan(id string) (*Plan, bool) {
 	return plan, true
 }
 
-// AddResponse inserts a participant's response and their choices into the database
-func AddResponse(planID string, resp ParticipantResponse) error {
+// AddResponse creates or updates a participant's response and choices.
+func AddResponse(planID string, resp *ParticipantResponse) error {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	res, err := tx.Exec("INSERT INTO responses (plan_id, name) VALUES (?, ?)", planID, resp.Name)
-	if err != nil {
-		return err
-	}
-
-	respID, err := res.LastInsertId()
-	if err != nil {
-		return err
+	respID := int64(resp.ID)
+	if resp.ID > 0 {
+		result, err := tx.Exec("UPDATE responses SET name = ? WHERE id = ? AND plan_id = ? AND edit_token = ?", resp.Name, resp.ID, planID, resp.EditToken)
+		if err != nil {
+			return err
+		}
+		updated, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if updated == 0 {
+			return sql.ErrNoRows
+		}
+		if _, err := tx.Exec("DELETE FROM response_choices WHERE response_id = ?", resp.ID); err != nil {
+			return err
+		}
+	} else {
+		if resp.EditToken == "" {
+			resp.EditToken = generateEditToken()
+		}
+		res, err := tx.Exec("INSERT INTO responses (plan_id, name, edit_token) VALUES (?, ?, ?)", planID, resp.Name, resp.EditToken)
+		if err != nil {
+			return err
+		}
+		respID, err = res.LastInsertId()
+		if err != nil {
+			return err
+		}
+		resp.ID = int(respID)
 	}
 
 	for optStr, choice := range resp.Available {
 		var optionID int
-		err := tx.QueryRow("SELECT id FROM options WHERE plan_id = ? AND option_time = ?", planID, optStr).Scan(&optionID)
+		err := tx.QueryRow("SELECT id FROM options WHERE plan_id = ? AND substr(option_time, 1, 10) = ? ORDER BY id LIMIT 1", planID, optStr).Scan(&optionID)
 		if err != nil {
 			return err
 		}
@@ -179,20 +262,32 @@ func AddResponse(planID string, resp ParticipantResponse) error {
 // GetPlanOptions returns only the options (dates) for a plan
 func GetPlanOptions(planID string) []time.Time {
 	var opts []time.Time
+	seenOptions := make(map[string]bool)
 	rows, err := db.Query("SELECT option_time FROM options WHERE plan_id = ? ORDER BY id", planID)
 	if err != nil {
 		return opts
 	}
 	defer rows.Close()
 
-	layout := "2006-01-02T15:04"
 	for rows.Next() {
 		var optStr string
 		if err := rows.Scan(&optStr); err == nil {
-			if t, err := time.Parse(layout, optStr); err == nil {
+			if t, err := parseOptionTime(optStr); err == nil {
+				dateKey := t.Format("2006-01-02")
+				if seenOptions[dateKey] {
+					continue
+				}
+				seenOptions[dateKey] = true
 				opts = append(opts, t)
 			}
 		}
 	}
 	return opts
+}
+
+func parseOptionTime(value string) (time.Time, error) {
+	if parsed, err := time.Parse("2006-01-02", value); err == nil {
+		return parsed, nil
+	}
+	return time.Parse("2006-01-02T15:04", value)
 }

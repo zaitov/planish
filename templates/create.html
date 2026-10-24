@@ -2,114 +2,42 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Create a New Plan – Planish</title>
-  <link rel="stylesheet" href="/style.css">
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 700px;
-      margin: 50px auto;
-      padding: 20px;
-    }
-
-    h1 {
-      text-align: center;
-    }
-
-    form {
-      margin-top: 30px;
-    }
-
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-
-    input[type="text"], input[type="datetime-local"] {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      margin-top: 5px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-    }
-
-    .option-group {
-      margin-top: 10px;
-    }
-
-    .option-group input {
-      width: calc(100% - 40px);
-      display: inline-block;
-    }
-
-    .remove-btn {
-      margin-left: 5px;
-      background-color: #e74c3c;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-
-    button[type="submit"], .add-option-btn {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 20px;
-      font-size: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    .add-option-btn {
-      background-color: #3498db;
-      margin-left: 10px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Create a plan | Planish</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <h1>Create a New Plan</h1>
-  <form action="/create" method="POST">
-    <label for="name">Plan Name:</label>
-    <input type="text" id="name" name="name" required>
-
-    <label>Date/Time Options:</label>
-    <div id="options">
-      <div class="option-group">
-        <input type="datetime-local" name="options" required>
-      </div>
-    </div>
-    <button type="button" class="add-option-btn" onclick="addOption()">➕ Add Option</button>
-
-    <br><br>
-    <button type="submit">Create Plan</button>
-  </form>
-
+  <header class="topbar"><a class="wordmark" href="/">Planish<span>.</span></a><a class="text-link" href="/">Home</a></header>
+  <main class="page-shell narrow-shell">
+    <p class="eyebrow">Make a plan</p>
+    <h1>When works for everyone?</h1>
+    <p class="intro">Add the dates you want your group to choose from.</p>
+    <form action="/create" method="POST" class="panel form-panel">
+      <label for="name">Plan name</label>
+      <input type="text" id="name" name="name" placeholder="Dinner, game night, ..." required>
+      <div class="field-heading"><span>Possible dates</span><span class="field-note">Date only, no times</span></div>
+      <div id="options" class="date-list"><div class="date-row"><input type="date" name="options" required aria-label="Possible date"></div></div>
+      <button type="button" class="button button-secondary" onclick="addOption()">+ Add another date</button>
+      <div class="form-actions"><button type="submit" class="button">Create plan</button></div>
+    </form>
+  </main>
   <script>
     function addOption() {
-      const container = document.getElementById('options');
       const group = document.createElement('div');
-      group.className = 'option-group';
-
+      group.className = 'date-row';
       const input = document.createElement('input');
-      input.type = 'datetime-local';
+      input.type = 'date';
       input.name = 'options';
       input.required = true;
-
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = 'remove-btn';
-      removeBtn.textContent = '✖';
-      removeBtn.onclick = () => group.remove();
-
-      group.appendChild(input);
-      group.appendChild(removeBtn);
-      container.appendChild(group);
+      input.setAttribute('aria-label', 'Possible date');
+      const removeButton = document.createElement('button');
+      removeButton.type = 'button';
+      removeButton.className = 'icon-button';
+      removeButton.textContent = 'Remove';
+      removeButton.setAttribute('aria-label', 'Remove date');
+      removeButton.onclick = () => group.remove();
+      group.append(input, removeButton);
+      document.getElementById('options').appendChild(group);
     }
   </script>
 </body>

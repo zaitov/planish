@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 	"time"
 	// other imports...
 )
@@ -46,10 +47,13 @@ func init() {
 			}
 		},
 		"displayTime": func(t time.Time) string {
-			return t.Format("Mon Jan 2, 15:04")
+			return t.Format("2 January Monday")
 		},
 		"formatTime": func(t time.Time) string {
-			return t.Format("2006-01-02T15:04")
+			return t.Format("2006-01-02")
+		},
+		"choiceChecked": func(available map[string]string, option, choice string) bool {
+			return available[option] == choice
 		},
 		"add": func(a, b int) int {
 			return a + b
@@ -58,15 +62,23 @@ func init() {
 }
 
 func main() {
-	InitDB("/app/data/plans.db")
+	databasePath := os.Getenv("DB_PATH")
+	if databasePath == "" {
+		databasePath = "plans.db"
+	}
+	InitDB(databasePath)
 	http.HandleFunc("/", HomeHandler)
 	http.HandleFunc("/create", CreatePlanHandler)
 	http.HandleFunc("/plan", ViewPlanHandler)
 	http.HandleFunc("/respond", RespondHandler)
 	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 
-	log.Println("Listening on :8080...")
-	err := http.ListenAndServe(":8080", nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Println("Listening on :" + port + "...")
+	err := http.ListenAndServe(":"+port, nil)
 	if err != nil {
 		log.Fatal(err)
 	}

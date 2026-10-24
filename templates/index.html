@@ -2,54 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Welcome to Planish</title>
-  <link rel="stylesheet" href="/style.css">
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-
-    a.button, button {
-      display: inline-block;
-      padding: 10px 20px;
-      margin: 10px;
-      font-size: 16px;
-      border: none;
-      background-color: #4CAF50;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-
-    input[type="text"] {
-      padding: 10px;
-      font-size: 16px;
-      width: 300px;
-      margin-top: 10px;
-    }
-
-    form {
-      margin-top: 30px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planish | Find a date together</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-  <h1>Welcome to Planish 🎯</h1>
-  <p>Plan events, vote on options, and find the perfect time together.</p>
-
-  <a href="/create" class="button">➕ Create a New Plan</a>
-
-  <form action="/plan" method="GET">
-    <h2>🔑 Join an Existing Plan</h2>
-    <label for="plan-id">Enter Plan ID:</label><br>
-    <input type="text" id="plan-id" name="id" placeholder="e.g. 123e4567-e89b-12d3-a456..." required>
-    <br><br>
-    <button type="submit">🔍 View Plan</button>
-  </form>
-
+  <header class="topbar"><a class="wordmark" href="/">Planish<span>.</span></a><a class="text-link" href="/create">Create a plan</a></header>
+  <main class="page-shell home-shell">
+    <section class="home-intro">
+      <p class="eyebrow">Good plans start with a date</p>
+      <h1>Get everyone<br>on the same day.</h1>
+      <p class="intro">Suggest a few dates, share one link, and find the day that works for your whole group.</p>
+      <a href="/create" class="button">Create a plan <span aria-hidden="true">→</span></a>
+    </section>
+    <section class="join-panel" aria-labelledby="join-heading">
+      <p class="eyebrow">Already invited?</p>
+      <h2 id="join-heading">Join a plan</h2>
+      <form action="/plan" method="GET">
+        <label for="plan-id">Plan ID</label>
+        <div class="join-row"><input type="text" id="plan-id" name="id" placeholder="Paste the plan ID" required><button type="submit" class="button">Open</button></div>
+      </form>
+    </section>
+  </main>
 </body>
 </html>
