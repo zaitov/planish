@@ -212,6 +212,15 @@ func AddResponse(planID string, resp *ParticipantResponse) error {
 	}
 	defer tx.Rollback()
 
+	if resp.ID == 0 {
+		err := tx.QueryRow(`SELECT id, edit_token FROM responses
+			WHERE plan_id = ? AND lower(trim(name)) = lower(trim(?))
+			ORDER BY id DESC LIMIT 1`, planID, resp.Name).Scan(&resp.ID, &resp.EditToken)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+	}
+
 	respID := int64(resp.ID)
 	if resp.ID > 0 {
 		result, err := tx.Exec("UPDATE responses SET name = ? WHERE id = ? AND plan_id = ? AND edit_token = ?", resp.Name, resp.ID, planID, resp.EditToken)
@@ -226,6 +235,14 @@ func AddResponse(planID string, resp *ParticipantResponse) error {
 			return sql.ErrNoRows
 		}
 		if _, err := tx.Exec("DELETE FROM response_choices WHERE response_id = ?", resp.ID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(`DELETE FROM response_choices WHERE response_id IN (
+			SELECT id FROM responses WHERE plan_id = ? AND lower(trim(name)) = lower(trim(?)) AND id <> ?
+		)`, planID, resp.Name, resp.ID); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("DELETE FROM responses WHERE plan_id = ? AND lower(trim(name)) = lower(trim(?)) AND id <> ?", planID, resp.Name, resp.ID); err != nil {
 			return err
 		}
 	} else {

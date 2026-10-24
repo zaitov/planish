@@ -4,28 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{.Name}} | Planish</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
   <header class="topbar"><a class="wordmark" href="/">Planish<span>.</span></a><a class="text-link" href="/create">New plan</a></header>
   <main class="page-shell">
     <section class="plan-heading">
-      <p class="eyebrow">Availability poll</p>
       <h1>{{.Name}}</h1>
-      <button type="button" class="button button-secondary" onclick="copyShareLink()">Copy invite link</button>
+      <button type="button" class="button button-secondary" onclick="copyShareLink()">Share</button>
       <input type="text" id="shareLink" value="{{.ShareLink}}" readonly aria-label="Invite link" class="visually-hidden">
       <span id="copyMsg" class="copy-message" role="status" hidden>Link copied</span>
     </section>
     <section class="response-section" id="availability">
       <div class="section-heading">
-        <div><p class="eyebrow">Your response</p><h2>{{if .SelectedResponse}}Update your dates{{else}}Which dates work?{{end}}</h2></div>
-        {{if .SelectedResponse}}<a class="text-link" href="/plan?id={{.ID}}#availability">Start a new response</a>{{end}}
+        <h2>{{if .SelectedResponse}}Edit response{{else}}Your availability{{end}}</h2>
+        {{if .SelectedResponse}}<a class="text-link" href="/plan?id={{.ID}}#availability">New response</a>{{end}}
       </div>
       <form action="/respond" method="POST" class="panel response-form">
         <input type="hidden" name="plan_id" value="{{.ID}}">
         <input type="hidden" name="response_id" value="{{if .SelectedResponse}}{{.SelectedResponse.ID}}{{end}}">
         <input type="hidden" name="edit_token" value="{{if .SelectedResponse}}{{.SelectedResponse.EditToken}}{{end}}">
-        <label for="name">Your name</label>
+        <label for="name">Name</label>
         <input type="text" name="name" id="name" value="{{if .SelectedResponse}}{{.SelectedResponse.Name}}{{end}}" placeholder="Name" required>
         <div class="date-options">
           {{range .Options}}
@@ -40,12 +42,38 @@
             </fieldset>
           {{end}}
         </div>
-        <button type="submit" class="button">{{if .SelectedResponse}}Save changes{{else}}Submit availability{{end}}</button>
+        <button type="submit" class="button">{{if .SelectedResponse}}Save{{else}}Submit{{end}}</button>
       </form>
     </section>
+    {{if .CalendarMonths}}
+      <section class="calendar-section" aria-label="Date vote calendar">
+        <div class="section-heading calendar-heading">
+          <h2>Calendar</h2>
+          <div class="calendar-legend" aria-label="Vote legend"><span><i class="legend-yes">✓</i> Yes</span><span><i class="legend-maybe">~</i> Maybe</span><span><i class="legend-no">×</i> No</span></div>
+        </div>
+        <div class="calendar-months">
+          {{range .CalendarMonths}}
+            <section class="calendar-month" aria-label="{{.Label}}">
+              <h3>{{.Label}}</h3>
+              <div class="calendar-grid calendar-weekdays" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+              {{range .Weeks}}
+                <div class="calendar-grid">
+                  {{range .}}
+                    <div class="calendar-day{{if .HasOption}} calendar-day-option{{end}}" {{if .HasOption}}aria-label="{{.AccessibleLabel}}" title="{{.AccessibleLabel}}"{{else}}aria-hidden="true"{{end}}>
+                      {{if .Number}}<span class="calendar-date">{{.Number}}</span>{{end}}
+                      {{if .HasOption}}<div class="calendar-votes"><span class="vote-yes">✓ {{.Yes}}</span><span class="vote-maybe">~ {{.Maybe}}</span><span class="vote-no">× {{.No}}</span></div>{{end}}
+                    </div>
+                  {{end}}
+                </div>
+              {{end}}
+            </section>
+          {{end}}
+        </div>
+      </section>
+    {{end}}
     {{if .Responses}}
       <section class="results-section">
-        <div class="section-heading"><div><p class="eyebrow">Group overview</p><h2>Responses</h2></div></div>
+        <div class="section-heading"><h2>Responses</h2></div>
         <div class="table-wrap"><table>
           <thead><tr><th scope="col">Date</th><th scope="col">Yes</th>{{range .Responses}}<th scope="col">{{.Name}}</th>{{end}}</tr></thead>
           <tbody>

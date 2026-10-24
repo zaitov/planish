@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -85,6 +87,71 @@ type PlanWithLink struct {
 	*Plan
 	ShareLink        string
 	SelectedResponse *ParticipantResponse
+	CalendarMonths   []CalendarMonth
+}
+
+type CalendarMonth struct {
+	Label string
+	Weeks [][]CalendarDay
+}
+
+type CalendarDay struct {
+	Number          int
+	HasOption       bool
+	AccessibleLabel string
+	Yes             int
+	Maybe           int
+	No              int
+}
+
+func buildCalendarMonths(options []time.Time, responses []ParticipantResponse) []CalendarMonth {
+	monthsByKey := make(map[string]time.Time)
+	optionsByDate := make(map[string]time.Time)
+	for _, option := range options {
+		monthStart := time.Date(option.Year(), option.Month(), 1, 0, 0, 0, 0, option.Location())
+		monthsByKey[monthStart.Format("2006-01")] = monthStart
+		optionsByDate[option.Format("2006-01-02")] = option
+	}
+
+	monthStarts := make([]time.Time, 0, len(monthsByKey))
+	for _, monthStart := range monthsByKey {
+		monthStarts = append(monthStarts, monthStart)
+	}
+	sort.Slice(monthStarts, func(i, j int) bool { return monthStarts[i].Before(monthStarts[j]) })
+
+	calendarMonths := make([]CalendarMonth, 0, len(monthStarts))
+	for _, monthStart := range monthStarts {
+		firstWeekday := (int(monthStart.Weekday()) + 6) % 7
+		daysInMonth := time.Date(monthStart.Year(), monthStart.Month()+1, 0, 0, 0, 0, 0, monthStart.Location()).Day()
+		weekCount := (firstWeekday + daysInMonth + 6) / 7
+		weeks := make([][]CalendarDay, weekCount)
+		for weekIndex := range weeks {
+			weeks[weekIndex] = make([]CalendarDay, 7)
+		}
+
+		for dayNumber := 1; dayNumber <= daysInMonth; dayNumber++ {
+			position := firstWeekday + dayNumber - 1
+			date := time.Date(monthStart.Year(), monthStart.Month(), dayNumber, 0, 0, 0, 0, monthStart.Location())
+			calendarDay := CalendarDay{Number: dayNumber}
+			if option, ok := optionsByDate[date.Format("2006-01-02")]; ok {
+				calendarDay.HasOption = true
+				for _, response := range responses {
+					switch response.Available[date.Format("2006-01-02")] {
+					case "yes":
+						calendarDay.Yes++
+					case "maybe":
+						calendarDay.Maybe++
+					case "no":
+						calendarDay.No++
+					}
+				}
+				calendarDay.AccessibleLabel = fmt.Sprintf("%s: %d yes, %d maybe, %d no", option.Format("Monday, 2 January"), calendarDay.Yes, calendarDay.Maybe, calendarDay.No)
+			}
+			weeks[position/7][position%7] = calendarDay
+		}
+		calendarMonths = append(calendarMonths, CalendarMonth{Label: monthStart.Format("January 2006"), Weeks: weeks})
+	}
+	return calendarMonths
 }
 
 func ViewPlanHandler(w http.ResponseWriter, r *http.Request) {
@@ -106,8 +173,9 @@ func ViewPlanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	fullURL := scheme + "://" + r.Host + "/plan?id=" + id
 	data := PlanWithLink{
-		Plan:      plan,
-		ShareLink: fullURL,
+		Plan:           plan,
+		ShareLink:      fullURL,
+		CalendarMonths: buildCalendarMonths(plan.Options, plan.Responses),
 	}
 	responseIDValue := r.URL.Query().Get("response_id")
 	if responseIDValue != "" {
