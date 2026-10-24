@@ -7,6 +7,8 @@ import (
 
 // ParticipantResponse stores what options a user is available for
 type ParticipantResponse struct {
+	ID        int
+	EditToken string
 	Name      string
 	Available map[string]string // option -> "yes" | "maybe" | "no"
 }
